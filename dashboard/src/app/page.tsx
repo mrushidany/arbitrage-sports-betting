@@ -116,7 +116,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Arbitrage Console</h1>
           <p className="text-sm text-zinc-500">
-            Live surebets across SportyBet · Helabet
+            Live surebets across SportyBet · Helabet · Betika · DB-Bet
           </p>
         </div>
         <span className="text-xs text-zinc-600">auto-refresh {POLL_MS / 1000}s</span>

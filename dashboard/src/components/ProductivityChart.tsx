@@ -135,15 +135,19 @@ export function ProductivityChart({
 }
 
 function ArbCard({ arb }: { arb: HistoricalArb }) {
-  const afterTaxLoss = arb.taxRate > 0 && arb.afterTaxProfitPct <= 0;
+  // Old JSONL records pre-date the tax fields — fall back to pre-tax figures.
+  const taxRate = arb.taxRate ?? 0;
+  const afterTaxProfitPct = arb.afterTaxProfitPct ?? arb.profitPct;
+  const afterTaxGuaranteedProfit = arb.afterTaxGuaranteedProfit ?? arb.guaranteedProfit;
+  const afterTaxLoss = taxRate > 0 && afterTaxProfitPct <= 0;
   return (
     <div className={`rounded border p-2 ${arb.suspicious ? 'border-amber-700 bg-amber-900/20' : afterTaxLoss ? 'border-red-800 bg-red-900/10' : 'border-zinc-700 bg-zinc-900/50'}`}>
       <div className="mb-1 flex flex-wrap items-baseline gap-2">
         {arb.suspicious && <span className="text-amber-400">⚠ suspicious</span>}
         <span className={`font-bold ${afterTaxLoss ? 'text-red-400' : 'text-emerald-400'}`}>
-          {arb.afterTaxProfitPct.toFixed(2)}% after tax
+          {afterTaxProfitPct.toFixed(2)}% {taxRate > 0 ? 'after tax' : 'profit'}
         </span>
-        {arb.taxRate > 0 && (
+        {taxRate > 0 && (
           <span className="text-zinc-600">({arb.profitPct.toFixed(2)}% pre-tax)</span>
         )}
         <span className="text-zinc-300">{arb.event.home} vs {arb.event.away}</span>
@@ -152,7 +156,7 @@ function ArbCard({ arb }: { arb: HistoricalArb }) {
       </div>
       {afterTaxLoss && (
         <div className="mb-1 text-xs text-red-400">
-          ⚠ Loss after {(arb.taxRate * 100).toFixed(0)}% withholding tax
+          ⚠ Loss after {(taxRate * 100).toFixed(0)}% withholding tax
         </div>
       )}
       <div className="mb-1 text-zinc-400">
@@ -174,9 +178,9 @@ function ArbCard({ arb }: { arb: HistoricalArb }) {
       </div>
       <div className="mt-1 text-zinc-400">
         Total <span className="text-zinc-200">{fmtMoney(arb.totalStake)} TZS</span>
-        {' → '}after-tax{' '}
+        {' → '}{taxRate > 0 ? 'after-tax ' : ''}
         <span className={`font-bold ${afterTaxLoss ? 'text-red-400' : 'text-emerald-400'}`}>
-          {afterTaxLoss ? '−' : ''}{fmtMoney(Math.abs(Math.round(arb.afterTaxGuaranteedProfit)))} TZS
+          {afterTaxLoss ? '−' : ''}{fmtMoney(Math.abs(Math.round(afterTaxGuaranteedProfit)))} TZS
         </span>
         {arb.note && <span className="ml-2 text-zinc-500">· {arb.note}</span>}
       </div>

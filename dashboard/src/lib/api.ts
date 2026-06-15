@@ -164,6 +164,8 @@ export const api = {
 export const BOOK_LABELS: Record<string, string> = {
   sportybet: 'SportyBet',
   helabet: 'Helabet',
+  betika: 'Betika',
+  dbbet: 'DB-Bet',
 };
 
 export function fmtMoney(n: number): string {
