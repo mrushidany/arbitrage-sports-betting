@@ -10,6 +10,7 @@
     "scan:once": "ts-node src/scan-once.ts",
     "debug:match": "ts-node src/debug-match.ts",
     "stats": "ts-node src/stats.ts",
+    "telegram:test": "ts-node src/telegram-test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
