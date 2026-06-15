@@ -33,12 +33,14 @@ interface BestPrice {
 export class ArbitrageService {
   private readonly minProfitPct: number;
   private readonly totalStake: number;
+  private readonly taxRate: number;
   /** Above this the "arb" is almost certainly a mismatch or stale price. */
   private readonly suspiciousProfitPct = 12;
 
   constructor(config: ConfigService) {
     this.minProfitPct = parseFloat(config.get('MIN_PROFIT_PCT') ?? '0.5');
     this.totalStake = parseFloat(config.get('TOTAL_STAKE') ?? '100000');
+    this.taxRate = parseFloat(config.get('WIN_TAX_PCT') ?? '0') / 100;
   }
 
   findArbs(events: MatchedEvent[]): ArbOpportunity[] {
@@ -92,6 +94,14 @@ export class ArbitrageService {
     const profitPct = (1 / impliedSum - 1) * 100;
     if (profitPct < this.minProfitPct) return null;
 
+    // After-tax implied sum using effective odds: o_eff = o × (1-T) + T
+    const T = this.taxRate;
+    const afterTaxImpliedSum = required.reduce((sum, code) => {
+      const o = best.get(code)!.odds;
+      return sum + 1 / (o * (1 - T) + T);
+    }, 0);
+    const afterTaxProfitPct = (1 / afterTaxImpliedSum - 1) * 100;
+
     const plan = calculateStakes(
       required.map((code) => ({
         bookmaker: best.get(code)!.bookmaker,
@@ -99,6 +109,7 @@ export class ArbitrageService {
         odds: best.get(code)!.odds,
       })),
       this.totalStake,
+      T,
     );
 
     return {
@@ -110,6 +121,9 @@ export class ArbitrageService {
       profitPct,
       totalStake: this.totalStake,
       guaranteedProfit: plan.guaranteedProfit,
+      taxRate: T,
+      afterTaxProfitPct,
+      afterTaxGuaranteedProfit: plan.afterTaxGuaranteedProfit,
       suspicious: profitPct > this.suspiciousProfitPct,
       note:
         type === 'DNB'

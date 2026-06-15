@@ -1,4 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScannerService } from '../scanner/scanner.service';
 import { SnapshotService } from '../snapshot/snapshot.service';
@@ -59,6 +61,27 @@ export class ApiController {
   async scan() {
     const arbs = await this.scanner.scan();
     return { ok: true, arbCount: arbs.length };
+  }
+
+  /**
+   * Arbs from arbs.jsonl whose detectedAt is within ±90s of the given
+   * timestamp t (ms). Used by the chart click-to-inspect feature.
+   */
+  @Get('arbs/around')
+  arbsAround(@Query('t') tStr?: string) {
+    const t = parseInt(tStr ?? '0', 10);
+    const window = 90_000;
+    try {
+      const raw = readFileSync(join(process.cwd(), 'data', 'arbs.jsonl'), 'utf8');
+      const arbs = raw
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => { try { return JSON.parse(line); } catch { return null; } })
+        .filter((a) => a && Math.abs(a.detectedAt - t) <= window);
+      return { t, arbs };
+    } catch {
+      return { t, arbs: [] };
+    }
   }
 
   /** Productivity time series for the dashboard chart (default last 24h). */

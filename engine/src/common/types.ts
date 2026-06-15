@@ -77,8 +77,14 @@ export interface ArbOpportunity {
   /** Guaranteed return as % of total stake, before rounding. */
   profitPct: number;
   totalStake: number;
-  /** Worst-case profit after stake rounding, in bankroll currency. */
+  /** Worst-case profit after stake rounding, in bankroll currency (pre-tax). */
   guaranteedProfit: number;
+  /** Withholding tax rate applied (e.g. 0.15 = 15%). 0 when not configured. */
+  taxRate: number;
+  /** Guaranteed profit % after withholding tax on winnings. Negative = loss. */
+  afterTaxProfitPct: number;
+  /** Worst-case guaranteed profit after tax and stake rounding, in bankroll currency. */
+  afterTaxGuaranteedProfit: number;
   /** True when profit is implausibly high — likely a mismatched event or stale odds. */
   suspicious: boolean;
   /**

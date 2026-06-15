@@ -14,6 +14,7 @@ import { ArbTable } from '@/components/ArbTable';
 import { SummaryCards } from '@/components/SummaryCards';
 import { BetsPanel } from '@/components/BetsPanel';
 import { ProductivityChart } from '@/components/ProductivityChart';
+import { CompoundingProjector } from '@/components/CompoundingProjector';
 
 const POLL_MS = 10_000;
 
@@ -132,6 +133,8 @@ export default function Dashboard() {
       <SummaryCards summary={summary} />
 
       <ProductivityChart points={statHistory} hours={statHours} onHoursChange={setStatHours} />
+
+      <CompoundingProjector currency={currency} />
 
       <section>
         <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-400">

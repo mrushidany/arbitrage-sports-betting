@@ -37,6 +37,9 @@ export interface Arb {
   impliedSum: number;
   totalStake: number;
   guaranteedProfit: number;
+  taxRate: number;
+  afterTaxProfitPct: number;
+  afterTaxGuaranteedProfit: number;
   suspicious: boolean;
   note?: string;
   detectedAt: number;
@@ -80,6 +83,23 @@ export interface StatPoint {
   under103: number;
 }
 
+export interface HistoricalArb {
+  id: string;
+  event: { home: string; away: string; league: string; startTime: number };
+  market: string;
+  legs: ArbLeg[];
+  impliedSum: number;
+  profitPct: number;
+  totalStake: number;
+  guaranteedProfit: number;
+  taxRate: number;
+  afterTaxProfitPct: number;
+  afterTaxGuaranteedProfit: number;
+  suspicious: boolean;
+  note?: string;
+  detectedAt: number;
+}
+
 export interface BetsSummary {
   currency: string;
   openCount: number;
@@ -109,6 +129,8 @@ export const api = {
   scanNow: () => request<{ ok: boolean; arbCount: number }>('/api/scan'),
   statsHistory: (hours = 24) =>
     request<{ hours: number; points: StatPoint[] }>(`/api/stats/history?hours=${hours}`),
+  arbsAround: (t: number) =>
+    request<{ t: number; arbs: HistoricalArb[] }>(`/api/arbs/around?t=${t}`),
   bets: () => request<Bet[]>('/api/bets'),
   summary: () => request<BetsSummary>('/api/bets/summary'),
   logBet: (arb: Arb, note?: string) =>

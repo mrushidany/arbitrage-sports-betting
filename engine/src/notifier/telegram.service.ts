@@ -25,6 +25,13 @@ export class TelegramService {
   }
 
   async sendArb(arb: ArbOpportunity): Promise<void> {
+    // Don't alert for arbs that are losses after withholding tax.
+    if (arb.taxRate > 0 && arb.afterTaxProfitPct <= 0) {
+      this.logger.log(
+        `Skipping Telegram alert — ${arb.profitPct.toFixed(2)}% pre-tax but ${arb.afterTaxProfitPct.toFixed(2)}% after ${(arb.taxRate * 100).toFixed(0)}% tax`,
+      );
+      return;
+    }
     const text = this.format(arb);
     if (!this.configured) {
       this.logger.log(`(Telegram not configured) Would send:\n${text.replace(/<[^>]+>/g, '')}`);
@@ -56,17 +63,18 @@ export class TelegramService {
     });
 
     const flag = arb.suspicious ? '⚠️ SUSPICIOUS (verify teams/odds!) ' : '';
+    const taxLabel = arb.taxRate > 0 ? ` · ${(arb.taxRate * 100).toFixed(0)}% tax` : '';
     const lines = [
-      `⚽ ${flag}<b>ARB ${arb.profitPct.toFixed(2)}%</b> — ${esc(arb.event.home)} vs ${esc(arb.event.away)}`,
+      `⚽ ${flag}<b>ARB ${arb.afterTaxProfitPct.toFixed(2)}% after tax</b> — ${esc(arb.event.home)} vs ${esc(arb.event.away)}`,
       `🏆 ${esc(arb.event.league)} · kickoff ${kickoff} EAT`,
-      `📊 Market: <b>${arb.market}</b> (implied ${(arb.impliedSum * 100).toFixed(2)}%)`,
+      `📊 Market: <b>${arb.market}</b>${taxLabel} · pre-tax ${arb.profitPct.toFixed(2)}%`,
       '',
       ...arb.legs.map(
         (leg) =>
           `• <b>${leg.outcome}</b> @ ${leg.odds.toFixed(2)} on <b>${BOOK_LABELS[leg.bookmaker] ?? leg.bookmaker}</b> → stake ${fmt(leg.stake)} ${this.currency}`,
       ),
       '',
-      `💰 Total ${fmt(arb.totalStake)} ${this.currency} → guaranteed ≈ <b>${fmt(Math.round(arb.guaranteedProfit))} ${this.currency}</b>`,
+      `💰 Total ${fmt(arb.totalStake)} ${this.currency} → after-tax profit ≈ <b>${fmt(Math.round(arb.afterTaxGuaranteedProfit))} ${this.currency}</b>`,
     ];
     if (arb.note) lines.push(`ℹ️ ${esc(arb.note)}`);
     return lines.join('\n');
