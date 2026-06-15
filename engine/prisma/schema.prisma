@@ -1,0 +1,76 @@
+// Phase 2 persistence. SQLite keeps this self-contained — no DB server to
+// run. To move to Postgres later, change `provider`/`url` below and run a
+// fresh migration; the rest of the app is unchanged (Prisma abstracts it).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A logged arbitrage bet (one row per arb the user actually placed).
+model Bet {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  home    String
+  away    String
+  league  String
+  market  String
+  kickoff DateTime
+
+  // Snapshot of the arb at log time, so history is stable even as odds move.
+  profitPct  Float
+  totalStake Float
+
+  status         BetStatus @default(OPEN)
+  /// Outcome code that actually won (set on settlement), e.g. "HOME".
+  winningOutcome String?
+  /// Realized profit/loss in bankroll currency, computed at settlement.
+  realizedPnl    Float?
+  settledAt      DateTime?
+
+  note String?
+
+  legs BetLeg[]
+}
+
+/// One leg of a bet — the stake placed at a single bookmaker on one outcome.
+model BetLeg {
+  id      String @id @default(cuid())
+  bet     Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+  betId   String
+
+  bookmaker String
+  outcome   String
+  odds      Float
+  stake     Float
+
+  @@index([betId])
+}
+
+enum BetStatus {
+  OPEN
+  SETTLED
+  VOID
+}
+
+/// One row per scan cycle — the productivity time series the dashboard charts.
+model ScanStat {
+  id              Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now())
+  matchedFixtures Int
+  tradableMarkets Int
+  arbCount        Int
+  /// Lowest implied % this scan (closest to an arb); null if no tradable markets.
+  tightestImplied Float?
+  /// Counts of markets below each implied-% threshold (how close to arbs).
+  under101        Int
+  under102        Int
+  under103        Int
+
+  @@index([createdAt])
+}
